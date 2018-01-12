@@ -15,6 +15,11 @@ import numpy as np
 import tf_util
 import gym
 import load_policy
+import utils
+
+from sklearn.model_selection import train_test_split
+
+save_path = './expert_data'
 
 def main():
     import argparse
@@ -25,6 +30,8 @@ def main():
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20,
                         help='Number of expert roll outs')
+    parser.add_argument('--save_data', action='store_true',
+                        help='saves data to expert_data/envname.npz if True')
     args = parser.parse_args()
 
     print('loading and building expert policy')
@@ -65,8 +72,19 @@ def main():
         print('mean return', np.mean(returns))
         print('std of return', np.std(returns))
 
-        expert_data = {'observations': np.array(observations),
-                       'actions': np.array(actions)}
+    if args.save_data:
+        train_obs, test_obs, train_act, test_act = train_test_split(
+            np.array(observations), np.array(actions).reshape((len(actions), len(action[0])))
+        )
+        expert_data = {'_data': train_obs,
+                       '_labels': train_act,
+                       '_test_data': test_obs,
+                       '_test_labels': test_act,
+                       '_envname': args.envname}
+        expert_data = utils.DataSet(**expert_data)
+        if not os.path.exists(SAVE_PATH):
+            os.makedirs(SAVE_PATH)
+        expert_data.save(os.path.join(SAVE_PATH, args.envname + '.npz'))
 
 if __name__ == '__main__':
     main()
